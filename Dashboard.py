@@ -29,14 +29,14 @@ locationcheck = shark_coord[['Case Number','Latitude', 'Longitude','Coordinate']
 locationlist = locations.values.tolist()
 shark_coord.fillna("Unknown",inplace=True)
 
-######Global Map: Attacks Heatmap#######
+#######Global Map: Attacks Heatmap#######
 center = [15,10]
 heat = folium.Map(location=center, tiles = 'Stamen Terrain', zoom_start=1, control_scale=True)
 
 HeatMap(locations).add_to(heat)
 heat.save('Heat_Map.html')
 
-#####Global Map:  Attack by Species Type#####
+#######Global Map:  Attack by Species Type#######
 m = folium.Map(location=center, zoom_start=1, tiles='Stamen Terrain')
 
 marker=folium.FeatureGroup(name='Shark Attacks', show=True)
@@ -100,7 +100,7 @@ folium.map.LayerControl(collapsed=True).add_to(m)
 
 m.save('Species_Map.html')
 
-#####Global Map:  Attack Details#####
+#######Global Map:  Attack Details#######
 
 m3 = folium.Map(location=center, zoom_start=1.5, tiles='openstreetmap')
 fg=folium.FeatureGroup(name='My Points', show=True)
@@ -132,7 +132,7 @@ m3
 
 m3.save('DetailsMap.html')
 
-#####Sunburst######
+#######Sunburst#######
 
 shdf = shark_coord
 shdf.fillna("Unknown",inplace=True)
@@ -201,7 +201,7 @@ sunburst = px.sunburst(levels,
 sunburst.update_layout(margin = dict(t=30, l=20, r=20, b=20))
 #sunburst.write_html("sun_burst_shark.html")
 
-#######Heatmap by Month######
+#######Heatmap by Month#######
 
 monthly = defaultdict(list)
 
@@ -229,7 +229,7 @@ hm = HeatMapWithTime(data=list(data.values()),
 hm.add_to(monthlymap)
 monthlymap.save('monthlyattacks.html')
 
-########Heatmap by Year######
+#######Heatmap by Year#######
 
 byyear = defaultdict(list)
 
@@ -266,7 +266,7 @@ year.save('yearlyattacks.html')
 
 #hm.save('YearlyMap.html')
 
-#######Dashboard Creation#####
+#######Dashboard Creation#######
 
 # Helper functions for dropdowns and slider
 def create_dropdown_options(series):
@@ -315,8 +315,8 @@ content = html.Div([dbc.Row([
     children=[
         html.Div(
             children=[
-                html.H2("Activities", style = {'color':'white', 'margin-top':'10px'}),
-                html.P("Analyze the behavior of Provoked and Unprovoked shark attacks between 1981 and 2021.",
+                html.H2("Shark Species", style = {'color':'white', 'margin-top':'10px'}),
+                html.P("Analyze the behavior of different shark species by region",
                     className="header-description", style = {'color':'white'}),
                 ]),
         html.Div(
@@ -336,37 +336,7 @@ content = html.Div([dbc.Row([
                         ),
                     ]
                 ),
-                html.Div(
-                    children=[
-                        html.Div(children="Activity Type",style = {'color':'white'}, className="menu-title"),
-                        dcc.Dropdown(
-                            id="type-filter",
-                            options=[
-                                {"label": act_type, "value": act_type}
-                                for act_type in shdf["Activity Type"].unique()
-                            ],
-                            value="Surfing",
-                            clearable=False,
-                            searchable=False,
-                            className="dropdown",
-                        ),
-                    ],
-                ),
-                html.Div(
-                    children=[
-                        html.Div(
-                            children="Date Range",style = {'color':'white'}, className="menu-title"
-                        ),
-                        dcc.DatePickerRange(
-                            id="date-range",
-                            min_date_allowed=shdf.Date2.min().date(),
-                            max_date_allowed=shdf.Date2.max().date(),
-                            start_date=shdf.Date2.min().date(),
-                            end_date=shdf.Date2.max().date(),
-                            style={'height':'50px'}
-                        ),
-                    ]
-                ),
+                              
             ],
             className="menu",
         ),
@@ -374,14 +344,14 @@ content = html.Div([dbc.Row([
                     children=[
                         html.Div(
                             children=dcc.Graph(
-                                id="provoked-chart",
+                                id="fatal-chart",
                                 config={"displayModeBar": False},
                             ),
                             className="card",
                         ),
                         html.Div(
                             children=dcc.Graph(
-                                id="unprovoked-chart",
+                                id="provoked-chart",
                                 config={"displayModeBar": False},
                             ),
                             className="card",
@@ -391,6 +361,8 @@ content = html.Div([dbc.Row([
                 ),
             ]
         ), id='right-container', style = {'margin-left': '350px', 'background-color': '#1c2e4a'}, width = 5)])])
+
+
 
 app.layout = dbc.Container(
     [
@@ -428,81 +400,30 @@ def select_graph(value):
         return fifthmap
 
 @app.callback(
-    [Output("provoked-chart", "figure"),Output("unprovoked-chart", "figure")],
+    [Output("fatal-chart", "figure"),Output("provoked-chart", "figure")],
     [
         Input("continent-filter", "value"),
-        Input("type-filter", "value"),
-        Input("date-range", "start_date"),
-        Input("date-range", "end_date"),
     ],
 )
 
 
-def update_charts(continent, act_type, start_date, end_date):
+
+
+def update_charts(continent):
     maskp = (
         (shdf["Continent/Region"] == continent)
-        & (shdf["Activity Type"] == act_type)
-        & (shdf.Date2 >= start_date)
-        & (shdf.Date2 <= end_date)
-        & (shdf.Type != "Unprovoked")
     )
-    masku = (
-        (shdf["Continent/Region"] == continent)
-        & (shdf["Activity Type"] == act_type)
-        & (shdf.Date2 >= start_date)
-        & (shdf.Date2 <= end_date)
-        & (shdf.Type == "Unprovoked")
-    )
-    filtered_datap = shdf.loc[maskp, :]
-    filtered_datau = shdf.loc[masku, :]
-    pro_figure = {
-        "data": [
-            {
-                "x": filtered_datap["Date2"],
-                "y": filtered_datap["Case Number"].count(),
-                "type": "lines+markers",
-            },
-        ],
-        "layout": {
-            "title": "Provoked Cases",
-            "xaxis": {"fixedrange": True},
-            "yaxis": {"fixedrange": True},
-            "colorway": ["#17B897"],               
-            'margin-top': '10px',
-            'margin-bottom': '10px',
-            'margin-left': '10px',
-            'margin-right': '10px',
-            'height': '300',
-            'margin-bottom': '10px',
-        },
-    }
-
-
-    unp_figure = {
-        "data": [
-            {
-                "x": filtered_datau["Date2"],
-                "y": filtered_datau["Case Number"].count(),
-                "type": "lines+markers",
-            },
-        ],
-        "layout": {
-            "title": "Unprovoked Cases", 
-            "xaxis": {"fixedrange": True},
-            "yaxis": {"fixedrange": True},
-            "colorway": ["#E12D39"],                
-            'margin-top': '10px',
-            'margin-bottom': '10px',
-            'margin-left': '10px',
-            'margin-right': '10px',
-            'height': '300',
-            'margin-bottom': '10px',
-        },
-    }
-    return pro_figure, unp_figure
-
-#if __name__ == '__main__':
-#    app.run_server(debug=True)
     
+    filtered_datap = shdf.loc[maskp, :]
+    df=filtered_datap.groupby("Species Type").count().reset_index()
+    
+    fig1 = px.bar(df, x="Species Type", y="Case Number", color="Fatal (Y/N)", barmode="group")
+    fig2 = px.bar(df, x="Species Type", y="Case Number", color="Type", barmode="group")
+        
+    return fig1, fig2
+
 if __name__ == '__main__':
-    app.run_server(host= '0.0.0.0',port=8050)
+    app.run_server(debug=True)
+    
+#if __name__ == '__main__':
+#    app.run_server(host= '0.0.0.0',port=8050)
