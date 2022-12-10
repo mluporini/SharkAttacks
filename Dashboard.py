@@ -323,7 +323,7 @@ content = html.Div([dbc.Row([
             children=[
                 html.Div(
                     children=[
-                        html.Div(children="Continent/Region",style = {'color':'white'}, className="menu-title"),
+                        html.Div(children="Continent/Region:",style = {'color':'white'}, className="menu-title"),
                         dcc.Dropdown(
                             id="continent-filter",
                             options=[
@@ -332,7 +332,7 @@ content = html.Div([dbc.Row([
                             ],
                             value="North America",
                             clearable=False,
-                            className="dropdown",
+                            className="dropdown", style = {'margin-bottom':'20px'}
                         ),
                     ]
                 ),
@@ -347,7 +347,7 @@ content = html.Div([dbc.Row([
                                 id="fatal-chart",
                                 config={"displayModeBar": False},
                             ),
-                            className="card",
+                            className="card", style = {'margin-bottom':'20px'},
                         ),
                         html.Div(
                             children=dcc.Graph(
@@ -410,15 +410,16 @@ def select_graph(value):
 
 
 def update_charts(continent):
+    shdf["count"]=1
     maskp = (
         (shdf["Continent/Region"] == continent)
     )
-    
     filtered_datap = shdf.loc[maskp, :]
-    df=filtered_datap.groupby("Species Type").count().reset_index()
+    df=filtered_datap.groupby(["Species Type", "Fatal (Y/N)"],as_index=False).count().reset_index()
+    df2=filtered_datap.groupby(["Species Type", "Type"],as_index=False).count().reset_index()
     
-    fig1 = px.bar(df, x="Species Type", y="Case Number", color="Fatal (Y/N)", barmode="group")
-    fig2 = px.bar(df, x="Species Type", y="Case Number", color="Type", barmode="group")
+    fig1 = px.bar(df, x="Species Type", y="count", color="Fatal (Y/N)", barmode="group", height = 350)
+    fig2 = px.bar(df2, x="Species Type", y="count", color="Type", barmode="group", height = 350)
         
     return fig1, fig2
 
