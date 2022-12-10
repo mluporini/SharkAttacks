@@ -426,4 +426,4 @@ def update_charts(continent):
 #    app.run_server(debug=True)
     
 if __name__ == '__main__':
-    app.run_server(host= '0.0.0.0',port=8050)
+    app.run_server(host= '0.0.0.0',port=80)
